@@ -22,6 +22,7 @@ class ObstacleManager:
             obs.model3d.reparentTo(obs)
             obs.model3d.setScale(1.4, 1.0, 1.4)
             obs.model3d.setPos(0, -0.1, 0)
+            obs.type = "wall"
 
         # płotek
         elif obs_type == 1:
@@ -31,6 +32,7 @@ class ObstacleManager:
             obs.model3d.reparentTo(obs)
             obs.model3d.setScale(0.8, 0.8, 0.8)
             obs.model3d.setPos(0, 0.15, 0)
+            obs.type = "up"
 
         # tyczki
         else:
@@ -40,7 +42,9 @@ class ObstacleManager:
             obs.model3d.reparentTo(obs)
             obs.model3d.setScale(1, 0.9, 1.2)
             obs.model3d.setPos(0, -0.45, 0)
+            obs.type = "down"
 
+        obs.scored = False
         self.obstacles.append(obs)
 
     def spawn_obstacle_loop(self):
