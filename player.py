@@ -7,7 +7,7 @@ class FootballPlayer(Entity):
     def __init__(self):
         super().__init__(y=0.5, z=-20, collider='box')
 
-        # ustwienia startowa
+        # ustwienia startowe
         self.current_lane = 1
         self.x = LANES[self.current_lane]
         self.y_velocity = 0.0
@@ -17,7 +17,7 @@ class FootballPlayer(Entity):
         self.crouch_timer = 0.0
         self.game_over = False
 
-        # model
+        # piłkarz
         self.model3d = Actor('assets/character.gltf')
         self.model3d.setScale(0.4, 0.4, 0.4)
         self.model3d.reparent_to(scene)
@@ -25,7 +25,8 @@ class FootballPlayer(Entity):
         self.model3d.loop('Run')
 
         # piłka
-        self.ball = Entity(model='sphere', color=color.white, texture='noise', scale=0.3)
+        self.ball = Actor('assets/ball.gltf')
+        self.ball.setScale(0.2)
         self.ball.reparent_to(scene)
 
     def trigger_game_over(self):
@@ -68,15 +69,19 @@ class FootballPlayer(Entity):
             self.model3d.setH(lerp(current_angle, 0, time.dt * 8))
             return
 
-        # synchronizacja z hitboxem
+        # synchronizacja z hitboxem piłkarza
         self.model3d.setX(self.x)
         self.model3d.setZ(self.z)
         self.model3d.setY(self.y - (self.scale_y * 0.5))
 
-        self.ball.x = self.x
-        self.ball.z = self.z + 0.4
-        self.ball.y = self.y - (self.scale_y * 0.5) + 0.15
-        self.ball.rotation_x += 800 * time.dt
+        # synchronizacja z hitboxem piłki
+        self.ball.setX(self.x)
+        self.ball.setZ(self.z + 0.5)
+        self.ball.setY(self.y - (self.scale_y * 0.5) + 0.18)
+
+        # rotacja piłki
+        current_pitch = self.ball.getP()
+        self.ball.setP(current_pitch - 500 * time.dt)
 
         # powrót z kucania
         if self.is_crouching:
