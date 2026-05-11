@@ -1,4 +1,4 @@
-from ursina import Entity, invoke, destroy, time, color
+from ursina import Entity, invoke, destroy, time
 import random
 from settings import *
 
@@ -14,12 +14,32 @@ class ObstacleManager:
         x_pos = random.choice(LANES)
         obs_type = random.choice([0, 1, 2])
 
+        # postać z muru piłkarskiego
         if obs_type == 0:
-            obs = Entity(model='cube', color=color.red, scale=(1, 2, 1), x=x_pos, y=1, z=50, collider='box')
+            obs = Entity(model='cube', color=color.clear, scale=(1, 1, 1), x=x_pos, y=1, z=50, collider='box')
+
+            obs.model3d = base.loader.loadModel('assets/mur_pilkarski.glb')
+            obs.model3d.reparentTo(obs)
+            obs.model3d.setScale(1.4, 1.0, 1.4)
+            obs.model3d.setPos(0, -0.1, 0)
+
+        # płotek
         elif obs_type == 1:
-            obs = Entity(model='cube', color=color.orange, scale=(1, 0.5, 1), x=x_pos, y=0.25, z=50, collider='box')
+            obs = Entity(model='cube', color=color.clear, scale=(1, 1, 1), x=x_pos, y=0.25, z=50, collider='box')
+
+            obs.model3d = base.loader.loadModel('assets/plotek.glb')
+            obs.model3d.reparentTo(obs)
+            obs.model3d.setScale(0.8, 0.8, 0.8)
+            obs.model3d.setPos(0, 0.15, 0)
+
+        # tyczki
         else:
-            obs = Entity(model='cube', color=color.yellow, scale=(1, 0.5, 1), x=x_pos, y=1.25, z=50, collider='box')
+            obs = Entity(model='cube', color=color.clear, scale=(1, 1, 1), x=x_pos, y=1.25, z=50, collider='box')
+
+            obs.model3d = base.loader.loadModel('assets/tyczki.glb')
+            obs.model3d.reparentTo(obs)
+            obs.model3d.setScale(1, 0.9, 1.2)
+            obs.model3d.setPos(0, -0.45, 0)
 
         self.obstacles.append(obs)
 
@@ -34,8 +54,14 @@ class ObstacleManager:
         for obs in self.obstacles[:]:
             obs.z -= WORLD_SPEED * time.dt
 
+            # kolizja
             if self.player.intersects(obs).hit:
                 self.player.trigger_game_over()
+
+            # usuwanie przeszków
             elif obs.z < -30:
+                if hasattr(obs, 'model3d'):
+                    obs.model3d.removeNode()
+
                 destroy(obs)
                 self.obstacles.remove(obs)
