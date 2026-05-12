@@ -1,6 +1,6 @@
-from ursina import Entity, time, curve, lerp, scene, color
+from ursina import Entity, time, curve, lerp, scene
 from direct.actor.Actor import Actor
-from settings import *
+from settings import LANES, JUMP_FORCE, CROUCH_DURATION, GRAVITY
 
 
 class FootballPlayer(Entity):
@@ -15,6 +15,7 @@ class FootballPlayer(Entity):
         self.is_jumping = False
         self.is_crouching = False
         self.crouch_timer = 0.0
+        self.game_started = False
         self.game_over = False
 
         # piłkarz
@@ -37,7 +38,7 @@ class FootballPlayer(Entity):
 
     # sterowanie
     def input(self, key):
-        if self.game_over: return
+        if not self.game_started or self.game_over: return
 
         if (key == 'left arrow') and self.current_lane > 0:
             self.current_lane -= 1
@@ -63,6 +64,8 @@ class FootballPlayer(Entity):
                 self.y = 0.25
 
     def update(self):
+        if not self.game_started: return
+
         # obrót po zderzeniu
         if self.game_over:
             current_angle = self.model3d.getH()

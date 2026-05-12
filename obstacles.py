@@ -1,6 +1,6 @@
 from ursina import Entity, invoke, destroy, time
 import random
-from settings import *
+from settings import LANES, color, WORLD_SPEED
 
 
 class ObstacleManager:
@@ -48,12 +48,13 @@ class ObstacleManager:
         self.obstacles.append(obs)
 
     def spawn_obstacle_loop(self):
-        if not self.player.game_over:
+        if self.player.game_started and not self.player.game_over:
             self.spawn_obstacle()
-            invoke(self.spawn_obstacle_loop, delay=0.8)
+
+        invoke(self.spawn_obstacle_loop, delay=0.8)
 
     def update(self):
-        if self.player.game_over: return
+        if not self.player.game_started or self.player.game_over: return
 
         for obs in self.obstacles[:]:
             obs.z -= WORLD_SPEED * time.dt

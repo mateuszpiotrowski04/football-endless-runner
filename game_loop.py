@@ -19,18 +19,25 @@ class GameLoop(Entity):
         )
 
     def update(self):
-        # punkty
-        if not self.player.game_over:
-            self.score += time.dt * WORLD_SPEED * 0.1
-
-            self.check_technical_bonus()
-
-            self.score_display.text = f'{int(self.score)} pkt'
+        if self.player.game_over:
+            if hasattr(self.player, 'ui_ref') and not self.player.ui_ref.end_menu.enabled:
+                self.player.ui_ref.show_game_over(self.score)
+                self.score_display.enabled = False
+            return
 
         # kamera - śledzenie gracza
         camera.x = lerp(camera.x, self.player.x, time.dt * 10)
         camera.y = lerp(camera.y, self.player.y + 1.5, time.dt * 10)
         camera.z = self.player.z - 10
+
+        if not self.player.game_started: return
+
+        # punkty
+        self.score += time.dt * WORLD_SPEED * 0.1
+
+        self.check_technical_bonus()
+
+        self.score_display.text = f'{int(self.score)} pkt'
 
         self.obstacle_manager.update()
 
@@ -68,3 +75,39 @@ class GameLoop(Entity):
 
     def add_bonus_points(self):
         self.score += 10
+
+    def start_game(self):
+        self.player.game_started = True
+
+    def restart_game(self):
+        # restart gracza
+        self.player.x = 0
+        self.player.y = 0.5
+        self.player.z = -20
+        self.player.rotation = (0, 0, 0)
+        self.player.model3d.setH(180)
+        self.player.current_lane = 1
+
+        self.player.is_jumping = False
+        self.player.is_crouching = False
+        self.player.game_over = False
+        self.player.game_started = True
+
+        self.player.model3d.stop()
+        self.player.model3d.loop('Run')
+
+        # czyszczenie przeszkód
+        for obs in self.obstacle_manager.obstacles:
+            destroy(obs)
+        self.obstacle_manager.obstacles.clear()
+
+        # reset punktów
+        self.score = 0
+        self.score_display.text = '0 pkt'
+        self.score_display.enabled = True
+
+        # przejecie kontroli
+        self.player.ui_ref.end_menu.enabled = False
+        self.player.ui_ref.bg_panel.enabled = False
+
+        time.dt = 0
