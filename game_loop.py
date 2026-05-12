@@ -42,7 +42,7 @@ class GameLoop(Entity):
         self.obstacle_manager.update()
 
     def check_technical_bonus(self):
-        for obs in self.obstacle_manager.obstacles:
+        for obs in self.obstacle_manager.active_obstacles:
             if obs.z < self.player.z and not obs.scored:
                 if abs(obs.x - self.player.x) < 0.5:
                     if (obs.type == 'up' and self.player.is_jumping) or \
@@ -97,9 +97,9 @@ class GameLoop(Entity):
         self.player.model3d.loop('Run')
 
         # czyszczenie przeszkód
-        for obs in self.obstacle_manager.obstacles:
-            destroy(obs)
-        self.obstacle_manager.obstacles.clear()
+        for obs in self.obstacle_manager.active_obstacles:
+            obs.enabled = False
+        self.obstacle_manager.active_obstacles.clear()
 
         # reset punktów
         self.score = 0
