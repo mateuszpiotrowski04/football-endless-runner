@@ -18,7 +18,7 @@ class ObstacleManager:
         if obs_type == 0:
             obs = Entity(model='cube', color=color.clear, scale=(1, 1, 1), x=x_pos, y=1, z=50, collider='box')
 
-            obs.model3d = base.loader.loadModel('assets/mur_pilkarski.glb')
+            obs.model3d = base.loader.loadModel('assets/training wall.glb')
             obs.model3d.reparentTo(obs)
             obs.model3d.setScale(1.4, 1.0, 1.4)
             obs.model3d.setPos(0, -0.1, 0)
@@ -28,7 +28,7 @@ class ObstacleManager:
         elif obs_type == 1:
             obs = Entity(model='cube', color=color.clear, scale=(1, 1, 1), x=x_pos, y=0.25, z=50, collider='box')
 
-            obs.model3d = base.loader.loadModel('assets/plotek.glb')
+            obs.model3d = base.loader.loadModel('assets/hurdle up.glb')
             obs.model3d.reparentTo(obs)
             obs.model3d.setScale(0.8, 0.8, 0.8)
             obs.model3d.setPos(0, 0.15, 0)
@@ -38,7 +38,7 @@ class ObstacleManager:
         else:
             obs = Entity(model='cube', color=color.clear, scale=(1, 1, 1), x=x_pos, y=1.25, z=50, collider='box')
 
-            obs.model3d = base.loader.loadModel('assets/tyczki.glb')
+            obs.model3d = base.loader.loadModel('assets/poles down.glb')
             obs.model3d.reparentTo(obs)
             obs.model3d.setScale(1, 0.9, 1.2)
             obs.model3d.setPos(0, -0.45, 0)
