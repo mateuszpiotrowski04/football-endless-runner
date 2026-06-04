@@ -25,7 +25,11 @@ obstacle_manager = ObstacleManager(player)
 main_loop = GameLoop(player, obstacle_manager)
 
 # ui
-ui = UIManager(start_callback=main_loop.start_game, restart_callback=main_loop.restart_game)
+ui = UIManager(
+    start_callback=main_loop.start_game,
+    restart_callback=main_loop.restart_game,
+    menu_callback=main_loop.reset_to_menu
+)
 player.ui_ref = ui
 
 app.run()

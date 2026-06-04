@@ -15,8 +15,10 @@ class FootballPlayer(Entity):
         self.is_jumping = False
         self.is_crouching = False
         self.crouch_timer = 0.0
+
         self.game_started = False
         self.game_over = False
+        self.in_finale = False
 
         # piłkarz
         self.model3d = Actor('assets/character.gltf')
@@ -29,6 +31,7 @@ class FootballPlayer(Entity):
         self.ball = Actor('assets/ball.gltf')
         self.ball.setScale(0.2)
         self.ball.reparent_to(scene)
+        self.ball_attached = True
 
     def trigger_game_over(self):
         if self.game_over: return
@@ -38,7 +41,7 @@ class FootballPlayer(Entity):
 
     # sterowanie
     def input(self, key):
-        if not self.game_started or self.game_over: return
+        if not self.game_started or self.game_over or self.in_finale: return
 
         if (key == 'left arrow') and self.current_lane > 0:
             self.current_lane -= 1
@@ -68,8 +71,9 @@ class FootballPlayer(Entity):
 
         # obrót po zderzeniu
         if self.game_over:
-            current_angle = self.model3d.getH()
-            self.model3d.setH(lerp(current_angle, 0, time.dt * 8))
+            if not self.in_finale:
+                current_angle = self.model3d.getH()
+                self.model3d.setH(lerp(current_angle, 0, time.dt * 8))
             return
 
         # synchronizacja z hitboxem piłkarza
@@ -78,13 +82,13 @@ class FootballPlayer(Entity):
         self.model3d.setY(self.y - (self.scale_y * 0.5))
 
         # synchronizacja z hitboxem piłki
-        self.ball.setX(self.x)
-        self.ball.setZ(self.z + 0.5)
-        self.ball.setY(self.y - (self.scale_y * 0.5) + 0.18)
+        if self.ball_attached:
+            self.ball.setX(self.x)
+            self.ball.setZ(self.z + 0.5)
+            self.ball.setY(self.y - (self.scale_y * 0.5) + 0.18)
 
         # rotacja piłki
-        current_pitch = self.ball.getP()
-        self.ball.setP(current_pitch - 500 * time.dt)
+        self.ball.setP(self.ball.getP() - 500 * time.dt)
 
         # powrót z kucania
         if self.is_crouching:
@@ -108,3 +112,8 @@ class FootballPlayer(Entity):
                 self.is_jumping = False
                 if not self.is_crouching:
                     self.model3d.loop('Run')
+
+    def move_to_center(self):
+        if self.current_lane != 1:
+            self.current_lane = 1
+            self.animate_x(LANES[self.current_lane], duration=0.3, curve=curve.in_out_sine)

@@ -8,6 +8,8 @@ class ObstacleManager:
         self.player = player_ref
         self.active_obstacles = []
         self.pool = []
+        self.can_spawn = True
+
         self.pre_warm_pool()
         self.spawn_obstacle_loop()
 
@@ -74,7 +76,7 @@ class ObstacleManager:
         self.active_obstacles.append(obs)
 
     def spawn_obstacle_loop(self):
-        if self.player.game_started and not self.player.game_over:
+        if self.player.game_started and not self.player.game_over and self.can_spawn:
             self.spawn_obstacle()
 
         invoke(self.spawn_obstacle_loop, delay=0.8)
