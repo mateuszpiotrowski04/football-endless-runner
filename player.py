@@ -1,4 +1,4 @@
-from ursina import Entity, time, curve, lerp, scene
+from ursina import Entity, time, curve, lerp, scene, camera
 from direct.actor.Actor import Actor
 from settings import LANES, JUMP_FORCE, CROUCH_DURATION, GRAVITY
 
@@ -33,12 +33,6 @@ class FootballPlayer(Entity):
         self.ball.reparent_to(scene)
         self.ball_attached = True
 
-    def trigger_game_over(self):
-        if self.game_over: return
-        self.game_over = True
-        self.model3d.stop()
-        self.model3d.play('Death')
-
     # sterowanie
     def input(self, key):
         if not self.game_started or self.game_over or self.in_finale: return
@@ -69,13 +63,32 @@ class FootballPlayer(Entity):
     def update(self):
         if not self.game_started: return
 
+        self._update_camera()
+        self._sync_hitboxes()
+
         # obrót po zderzeniu
         if self.game_over:
-            if not self.in_finale:
-                current_angle = self.model3d.getH()
-                self.model3d.setH(lerp(current_angle, 0, time.dt * 8))
+            self._handle_game_over_rotation()
             return
 
+        # powrót z kucania
+        if self.is_crouching:
+            self._handle_crouch_recovery()
+
+        # powrót ze skoku
+        if self.is_jumping:
+            self._handle_jump_physics()
+
+        # animacja lotu piłki
+        if not self.ball_attached and self.ball_target_pos:
+            self._animate_ball_flight()
+
+    def _update_camera(self):
+        camera.x = lerp(camera.x, self.x, time.dt * 10)
+        camera.y = lerp(camera.y, self.y + 1.5, time.dt * 10)
+        camera.z = self.z - 10
+
+    def _sync_hitboxes(self):
         # synchronizacja z hitboxem piłkarza
         self.model3d.setX(self.x)
         self.model3d.setZ(self.z)
@@ -90,30 +103,79 @@ class FootballPlayer(Entity):
         # rotacja piłki
         self.ball.setP(self.ball.getP() - 500 * time.dt)
 
-        # powrót z kucania
-        if self.is_crouching:
-            self.crouch_timer -= time.dt
-            if self.crouch_timer <= 0:
-                self.is_crouching = False
-                self.scale_y = 1.0
-                if not self.is_jumping:
-                    self.y = 0.5
-                    self.model3d.loop('Run')
+    def _handle_game_over_rotation(self):
+        if not self.in_finale:
+            current_angle = self.model3d.getH()
+            self.model3d.setH(lerp(current_angle, 0, time.dt * 8))
 
-        # powrót ze skoku
-        if self.is_jumping:
-            self.y_velocity -= GRAVITY * time.dt
-            self.y += self.y_velocity * time.dt
-            target_ground = 0.25 if self.is_crouching else 0.5
+    def _handle_crouch_recovery(self):
+        self.crouch_timer -= time.dt
+        if self.crouch_timer <= 0:
+            self.is_crouching = False
+            self.scale_y = 1.0
+            if not self.is_jumping:
+                self.y = 0.5
+                self.model3d.loop('Run')
 
-            if self.y <= target_ground:
-                self.y = target_ground
-                self.y_velocity = 0
-                self.is_jumping = False
-                if not self.is_crouching:
-                    self.model3d.loop('Run')
+    def _handle_jump_physics(self):
+        self.y_velocity -= GRAVITY * time.dt
+        self.y += self.y_velocity * time.dt
+        target_ground = 0.25 if self.is_crouching else 0.5
+
+        if self.y <= target_ground:
+            self.y = target_ground
+            self.y_velocity = 0
+            self.is_jumping = False
+            if not self.is_crouching:
+                self.model3d.loop('Run')
+
+    def _animate_ball_flight(self):
+        self.ball_flight_timer += time.dt / 0.4
+        if self.ball_flight_timer > 1.0:
+            self.ball_flight_timer = 1.0
+
+        curr_x = lerp(self.ball_start_pos[0], self.ball_target_pos[0], self.ball_flight_timer)
+        curr_y = lerp(self.ball_start_pos[1], self.ball_target_pos[1], self.ball_flight_timer)
+        curr_z = lerp(self.ball_start_pos[2], self.ball_target_pos[2], self.ball_flight_timer)
+
+        self.ball.setX(curr_x)
+        self.ball.setY(curr_y)
+        self.ball.setZ(curr_z)
+
+    def trigger_game_over(self):
+        if self.game_over: return
+        self.game_over = True
+        self.model3d.stop()
+        self.model3d.play('Death')
+
+    def reset_player(self):
+        self.x = 0
+        self.y = 0.5
+        self.z = -20
+        self.rotation = (0, 0, 0)
+        self.model3d.setH(180)
+        self.current_lane = 1
+
+        self.is_jumping = False
+        self.is_crouching = False
+        self.game_over = False
+        self.game_started = True
+        self.in_finale = False
+
+        self.ball_attached = True
+        self.ball_target_pos = None
+        self.ball_flight_timer = 0.0
+
+        self.model3d.stop()
+        self.model3d.loop('Run')
 
     def move_to_center(self):
         if self.current_lane != 1:
             self.current_lane = 1
             self.animate_x(LANES[self.current_lane], duration=0.3, curve=curve.in_out_sine)
+
+    def shoot(self, target_pos):
+        self.ball_attached = False
+        self.ball_start_pos = (self.ball.getX(), self.ball.getY(), self.ball.getZ())
+        self.ball_target_pos = target_pos
+        self.ball_flight_timer = 0.0

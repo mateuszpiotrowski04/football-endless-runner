@@ -1,4 +1,4 @@
-from ursina import Entity, camera, color, Text, Button, Vec3, time, invoke, application
+from ursina import Entity, camera, color, Text, Button, Vec3, time, invoke, application, curve, destroy
 import math
 
 
@@ -32,13 +32,6 @@ class UIManager(Entity):
                           color=self.c_text_main)
         self.instructions = Text(parent=self.start_menu, text='DEMO 2.0', scale=1.5,
                                  y=0.12, origin=(0, 0), color=self.c_text_sub)
-
-        # ekran przegranej
-        self.end_menu = Entity(parent=self, enabled=False)
-        self.game_over_text = Text(parent=self.end_menu, text='KONIEC TRENINGU', scale=3.5, y=0.2, origin=(0, 0),
-                                   color=self.c_text_main)
-        self.final_score_text = Text(parent=self.end_menu, text='Wynik: 0 pkt', scale=2, y=0.05, origin=(0, 0),
-                                    color=self.c_text_sub)
 
         # przycisk start
         self.start_button = Button(parent=self.start_menu, text='START', color=self.c_btn_primary, scale=(0.3, 0.08),
@@ -195,6 +188,21 @@ class UIManager(Entity):
         self.restart_button.color = self.c_btn_primary
         if self.restart_callback:
             self.restart_callback()
+
+    def show_bonus_popup(self):
+        bonus_popup = Text(
+            text='+10 pkt',
+            parent=camera.ui,
+            position=(-0.55, 0.4),
+            scale=1.7,
+            color=color.black,
+            origin=(0, 0)
+        )
+        bonus_popup.animate_scale(1.2, duration=0.2, curve=curve.out_back)
+
+        invoke(bonus_popup.animate_position, (-0.55, 0.45), duration=0.3, curve=curve.in_sine, delay=1.0)
+        invoke(bonus_popup.animate_color, color.clear, duration=0.3, delay=1.0)
+        invoke(destroy, bonus_popup, delay=1.3)
 
     def update_power_bar(self, power):
         self.power_bar_bg.enabled = True
