@@ -9,21 +9,31 @@ class FinaleGoal(Entity):
         super().__init__()
         self.player = player_ref
         self.win_callback = win_callback
-
+        self.enabled = False
         self.z = 60
 
         # bramka
-        Entity(parent=self, model='cube', scale=(0.2, 3, 0.2), x=-3, y=1.5, color=color.white)
-        Entity(parent=self, model='cube', scale=(0.2, 3, 0.2), x=3, y=1.5, color=color.white)
-        Entity(parent=self, model='cube', scale=(6.2, 0.2, 0.2), y=3, color=color.white)
-        Entity(parent=self, model='quad', scale=(6, 3), z=2, y=1.5, color=color.rgba(100, 150, 255, 100))
+        self.goal = Entity(
+            parent=self,
+            model='goal',
+            scale=(1.1, 1.3, 1.1),
+            y=-0.2
+        )
 
         # bramkarz
-        self.dummy = Entity(parent=self, model='cube', scale=(2, 2, 0.5), y=1, color=color.red, collider='box')
+        self.goalkeeper = Entity(
+            parent=self,
+            model='training wall',
+            scale=(1.5, 1.2, 1.5),
+            y=1.05,
+            z=-2.0,
+            color=color.red,
+            collider='box'
+        )
 
         self.lanes = [-2, 0, 2]
         self.current_lane_index = 1
-        self.dummy.x = self.lanes[self.current_lane_index]
+        self.goalkeeper.x = self.lanes[self.current_lane_index]
         self.move_timer = 0.5
 
     def update(self):
@@ -41,6 +51,13 @@ class FinaleGoal(Entity):
             self.current_lane_index = max(0, min(2, self.current_lane_index))
 
             target_x = self.lanes[self.current_lane_index]
-            self.dummy.animate_x(target_x, duration=0.25, curve=curve.out_sine)
+            self.goalkeeper.animate_x(target_x, duration=0.25, curve=curve.out_sine)
 
             self.move_timer = 0.5
+
+    def reset_goal(self):
+        self.z = 60
+        self.current_lane_index = 1
+        self.goalkeeper.x = self.lanes[self.current_lane_index]
+        self.move_timer = 0.5
+        self.enabled = True

@@ -28,9 +28,12 @@ class FootballPlayer(Entity):
         self.model3d.loop('Run')
 
         # piłka
-        self.ball = Actor('assets/ball.gltf')
-        self.ball.setScale(0.2)
-        self.ball.reparent_to(scene)
+        self.ball = Entity(
+            parent=scene,
+            model='ball',
+            scale=1.5,
+            position=(0, -0.35, 0.5)
+        )
         self.ball_attached = True
 
     # sterowanie
@@ -100,8 +103,8 @@ class FootballPlayer(Entity):
             self.ball.setZ(self.z + 0.5)
             self.ball.setY(self.y - (self.scale_y * 0.5) + 0.18)
 
-        # rotacja piłki
-        self.ball.setP(self.ball.getP() - 500 * time.dt)
+            # rotacja piłki
+            self.ball.rotation_x += 500 * time.dt
 
     def _handle_game_over_rotation(self):
         if not self.in_finale:
@@ -138,9 +141,8 @@ class FootballPlayer(Entity):
         curr_y = lerp(self.ball_start_pos[1], self.ball_target_pos[1], self.ball_flight_timer)
         curr_z = lerp(self.ball_start_pos[2], self.ball_target_pos[2], self.ball_flight_timer)
 
-        self.ball.setX(curr_x)
-        self.ball.setY(curr_y)
-        self.ball.setZ(curr_z)
+        self.ball.position = (curr_x, curr_y, curr_z)
+        self.ball.rotation_x += 800 * time.dt
 
     def trigger_game_over(self):
         if self.game_over: return
@@ -162,12 +164,12 @@ class FootballPlayer(Entity):
         self.game_started = True
         self.in_finale = False
 
+        self.model3d.stop()
+        self.model3d.loop('Run')
+
         self.ball_attached = True
         self.ball_target_pos = None
         self.ball_flight_timer = 0.0
-
-        self.model3d.stop()
-        self.model3d.loop('Run')
 
     def move_to_center(self):
         if self.current_lane != 1:
@@ -176,6 +178,6 @@ class FootballPlayer(Entity):
 
     def shoot(self, target_pos):
         self.ball_attached = False
-        self.ball_start_pos = (self.ball.getX(), self.ball.getY(), self.ball.getZ())
+        self.ball_start_pos = self.ball.world_position
         self.ball_target_pos = target_pos
         self.ball_flight_timer = 0.0

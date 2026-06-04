@@ -17,6 +17,8 @@ class GameLoop(Entity):
         self.power = 0.0
         self.shot_fired = False
 
+        self.goal_entity = FinaleGoal(self.player, self.trigger_win)
+
         self.score_display = Text(
             text='0 pkt',
             parent=camera.ui,
@@ -104,7 +106,7 @@ class GameLoop(Entity):
         self.power = 0.0
         self.player.in_finale = True
         self.player.move_to_center()
-        self.goal_entity = FinaleGoal(self.player, self.trigger_win)
+        self.goal_entity.reset_goal()
 
     def execute_shot(self, direction):
         self.shot_fired = True
@@ -140,7 +142,7 @@ class GameLoop(Entity):
         invoke(self.verify_shot, target_x, is_goal_possible, delay=0.4)
 
     def verify_shot(self, target_x, is_goal_possible):
-        murek_x = self.goal_entity.dummy.x
+        murek_x = self.goal_entity.goalkeeper.x
 
         if not is_goal_possible or target_x == murek_x:
             self.player.model3d.loop('Defeat')
@@ -163,7 +165,6 @@ class GameLoop(Entity):
 
         self.obstacle_manager.enabled = True
         self.obstacle_manager.can_spawn = True
-        self.obstacle_manager.spawn_timer = 0
 
         # reset punktów
         self.score = 0
@@ -174,16 +175,11 @@ class GameLoop(Entity):
         self.player.ui_ref.end_menu.enabled = False
         self.player.ui_ref.bg_panel.enabled = False
 
-        # Resetowanie Finału
         self.is_finale = False
         self.preparing_finale = False
         self.shot_fired = False
 
-        if self.goal_entity:
-            destroy(self.goal_entity)
-            self.goal_entity = None
-
-        time.dt = 0
+        self.goal_entity.enabled = False
 
     def reset_to_menu(self):
         self.restart_game()

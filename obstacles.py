@@ -1,4 +1,4 @@
-from ursina import Entity, invoke, time
+from ursina import Entity, invoke, time, duplicate
 import random
 from settings import LANES, color, WORLD_SPEED
 
@@ -9,6 +9,10 @@ class ObstacleManager:
         self.active_obstacles = []
         self.pool = []
         self.can_spawn = True
+
+        self.base_wall = Entity(model='training wall', scale=(1.4, 1.0, 1.4), y=-0.1, enabled=False)
+        self.base_up = Entity(model='hurdle up', scale=(0.8, 0.8, 0.8), y=0.15, enabled=False)
+        self.base_down = Entity(model='poles down', scale=(1, 0.9, 1.2), y=-0.45, enabled=False)
 
         self.pre_warm_pool()
         self.spawn_obstacle_loop()
@@ -21,27 +25,20 @@ class ObstacleManager:
 
     def create_new_obstacles(self, target_type):
         obs = Entity(model='cube', color=color.clear, scale=(1, 1, 1), collider='box', enabled=False)
+        obs.visual = Entity(parent=obs)
 
         # postać z muru piłkarskiego
         if target_type == "wall":
-            obs.model3d = base.loader.loadModel('assets/training wall.glb')
-            obs.model3d.reparentTo(obs)
-            obs.model3d.setScale(1.4, 1.0, 1.4)
-            obs.model3d.setPos(0, -0.1, 0)
-
+            obs.model3d = duplicate(self.base_wall)
         # płotek
         elif target_type == "up":
-            obs.model3d = base.loader.loadModel('assets/hurdle up.glb')
-            obs.model3d.reparentTo(obs)
-            obs.model3d.setScale(0.8, 0.8, 0.8)
-            obs.model3d.setPos(0, 0.15, 0)
-
+            obs.model3d = duplicate(self.base_up)
         # tyczki
         else:
-            obs.model3d = base.loader.loadModel('assets/poles down.glb')
-            obs.model3d.reparentTo(obs)
-            obs.model3d.setScale(1, 0.9, 1.2)
-            obs.model3d.setPos(0, -0.45, 0)
+            obs.model3d = duplicate(self.base_down)
+
+        obs.model3d.parent = obs.visual
+        obs.model3d.enabled = True
 
         obs.type = target_type
         self.pool.append(obs)
