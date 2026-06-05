@@ -1,4 +1,4 @@
-from ursina import Entity, camera, time, Text, color, destroy, invoke
+from ursina import Entity, camera, time, Text, color, invoke
 from settings import WORLD_SPEED
 from goal import FinaleGoal, GOAL_DISTANCE
 
@@ -30,13 +30,12 @@ class GameLoop(Entity):
 
     def update(self):
         if self._handle_game_over_state(): return
-
         if not self.player.game_started: return
+
+        self._handle_normal_run_logic()
 
         if self.is_finale or self.preparing_finale:
             self._handle_finale_logic()
-        else:
-            self._handle_normal_run_logic()
 
         self.obstacle_manager.update()
 
@@ -50,9 +49,10 @@ class GameLoop(Entity):
         return False
 
     def _handle_normal_run_logic(self):
-        self.score += time.dt * WORLD_SPEED * 0.1
-        self.check_technical_bonus()
-        self.score_display.text = f'{int(self.score)} pkt'
+        if not self.is_finale or (self.goal_entity.z - self.player.z) > GOAL_DISTANCE:
+            self.score += time.dt * WORLD_SPEED * 0.1
+            self.score_display.text = f'{int(self.score)} pkt'
+            self.check_technical_bonus()
 
         if self.score >= self.WIN_SCORE and not self.preparing_finale:
             self.preparing_finale = True
@@ -179,6 +179,7 @@ class GameLoop(Entity):
         self.preparing_finale = False
         self.shot_fired = False
 
+        self.goal_entity.reset_goal()
         self.goal_entity.enabled = False
 
     def reset_to_menu(self):
