@@ -1,6 +1,20 @@
 from ursina import Entity, camera, color, Text, Button, Vec3, time, invoke, application, curve, destroy
 import math
+import random
 
+
+class MenuButton(Button):
+    def __init__(self, text, parent, x=0, y=0, btn_color=color.rgba(0.3, 0.3, 0.3, 1.0)):
+        super().__init__(
+            parent=parent,
+            text=text,
+            color=btn_color,
+            scale=(0.3, 0.08),
+            position=(x, y),
+            collider=None
+        )
+        self.text_entity.color = color.rgba(0.9, 0.9, 0.9, 1.0)
+        self.base_scale = Vec3(0.3, 0.08, 1)
 
 class UIManager(Entity):
     def __init__(self, start_callback, restart_callback, menu_callback = None):
@@ -30,14 +44,10 @@ class UIManager(Entity):
         self.start_menu = Entity(parent=self, enabled=True)
         self.title = Text(parent=self.start_menu, text='FOOTBALL RUNNER', scale=4, y=0.2, origin=(0, 0),
                           color=self.c_text_main)
-        self.instructions = Text(parent=self.start_menu, text='DEMO 2.0', scale=1.5,
-                                 y=0.12, origin=(0, 0), color=self.c_text_sub)
+        self.instructions = Text(parent=self.start_menu, text='DEMO 2.0', scale=1.5, y=0.12, origin=(0, 0),
+                                 color=self.c_text_sub)
 
-        # przycisk start
-        self.start_button = Button(parent=self.start_menu, text='START', color=self.c_btn_primary, scale=(0.3, 0.08),
-                                   y=-0.1, collider=None)
-        self.start_button.text_entity.color = self.c_text_main
-        self.start_button.base_scale = Vec3(0.3, 0.08, 1)
+        self.start_button = MenuButton('START', parent=self.start_menu, y=-0.1)
 
         # ekran przegranej
         self.end_menu = Entity(parent=self, enabled=False)
@@ -46,17 +56,8 @@ class UIManager(Entity):
         self.final_score_text = Text(parent=self.end_menu, text='Wynik: 0 pkt', scale=2, y=0.05, origin=(0, 0),
                                     color=self.c_text_sub)
 
-        # przycisk zagraj ponownie
-        self.restart_button = Button(parent=self.end_menu, text='ZAGRAJ PONOWNIE', color=self.c_btn_primary, scale=(0.3, 0.08),
-                                     x=-0.18, y=-0.1, collider=None)
-        self.restart_button.text_entity.color = self.c_text_main
-        self.restart_button.base_scale = Vec3(0.3, 0.08, 1)
-
-        # przycisk koniec gry
-        self.exit_button = Button(parent=self.end_menu, text='KONIEC GRY', color=self.c_btn_danger, scale=(0.3, 0.08),
-                                  x=0.18, y=-0.1, collider=None)
-        self.exit_button.text_entity.color = self.c_text_main
-        self.exit_button.base_scale = Vec3(0.3, 0.08, 1)
+        self.restart_button = MenuButton('ZAGRAJ PONOWNIE', parent=self.end_menu, x=-0.18, y=-0.1)
+        self.exit_button = MenuButton('KONIEC GRY', parent=self.end_menu, x=0.18, y=-0.1, btn_color=self.c_btn_danger)
 
         # ekran wygranej
         self.win_menu = Entity(parent=self, enabled=False)
@@ -65,23 +66,24 @@ class UIManager(Entity):
         self.win_score_text = Text(parent=self.win_menu, text='Wynik: 0 pkt', scale=2, y=0.05, origin=(0, 0),
                                    color=self.c_text_main)
 
-        # przycisk menu główne
-        self.menu_button = Button(parent=self.win_menu, text='MENU GŁÓWNE', color=self.c_btn_primary, scale=(0.3, 0.08),
-                                  x=-0.18, y=-0.1, collider=None)
-        self.menu_button.text_entity.color = self.c_text_main
-        self.menu_button.base_scale = Vec3(0.3, 0.08, 1)
-
-        # przycisk koniec gry
-        self.win_exit_button = Button(parent=self.win_menu, text='KONIEC GRY', color=self.c_btn_danger, scale=(0.3, 0.08),
-                                      x=0.18, y=-0.1, collider=None)
-        self.win_exit_button.text_entity.color = self.c_text_main
-        self.win_exit_button.base_scale = Vec3(0.3, 0.08, 1)
+        self.menu_button = MenuButton('MENU GŁÓWNE', parent=self.win_menu, x=-0.18, y=-0.1)
+        self.win_exit_button = MenuButton('KONIEC GRY', parent=self.win_menu, x=0.18, y=-0.1, btn_color=self.c_btn_danger)
 
         # pasek siły strzału
-        self.power_bar_bg = Entity(parent=camera.ui, model='quad', scale=(0.5, 0.04), y=-0.3,
-                                   color=color.rgba(0, 0, 0, 150), enabled=False)
-        self.power_bar_fill = Entity(parent=self.power_bar_bg, model='quad', scale=(0, 1), x=-0.5, origin=(-0.5, 0),
-                                     color=color.yellow)
+        self.base_bar_x = 0
+        self.base_bar_y = -0.3
+
+        self.power_bar_bg = Button(parent=camera.ui, scale=(0.5, 0.04), position=(self.base_bar_x, self.base_bar_y),
+                                   color=self.c_btn_primary, collider=None, enabled=False)
+
+        self.power_bar_inner = Entity(parent=self.power_bar_bg, model='quad', scale=(0.98, 0.8),
+                                      color=color.black, z=-0.01)
+
+        self.power_bar_fill = Entity(parent=self.power_bar_bg, model='quad', scale=(0, 0.8), x=-0.49, origin=(-0.5, 0),
+                                     color=color.gray, z=-0.02)
+
+        Entity(parent=self.power_bar_inner, model='quad', color=self.c_btn_primary, scale=(0.005, 1), x=-0.165, z=-0.03)
+        Entity(parent=self.power_bar_inner, model='quad', color=self.c_btn_primary, scale=(0.005, 1), x=0.165, z=-0.03)
 
     def update(self):
         if self.is_clicking: return
@@ -208,16 +210,25 @@ class UIManager(Entity):
         self.power_bar_bg.enabled = True
 
         clamped_power = min(power, 1.0)
-        self.power_bar_fill.scale_x = clamped_power
+        self.power_bar_fill.scale_x = clamped_power * 0.98
+
+        self.power_bar_bg.position = (self.base_bar_x, self.base_bar_y)
 
         if power <= 0.33:
-            self.power_bar_fill.color = color.yellow
+            self.power_bar_fill.color = color.gray
         elif power <= 0.66:
-            self.power_bar_fill.color = color.orange
+            self.power_bar_fill.color = color.green
         elif power <= 1.0:
-            self.power_bar_fill.color = color.red
+            self.power_bar_fill.color = color.orange
         else:
-            self.power_bar_fill.color = color.black
+            self.power_bar_fill.color = color.red
+
+            # animacja trzęsienia
+            shake_intensity = 0.008
+            shake_x = self.base_bar_x + random.uniform(-shake_intensity, shake_intensity)
+            shake_y = self.base_bar_y + random.uniform(-shake_intensity, shake_intensity)
+            self.power_bar_bg.position = (shake_x, shake_y)
 
     def hide_power_bar(self):
         self.power_bar_bg.enabled = False
+        self.power_bar_bg.position = (self.base_bar_x, self.base_bar_y)
