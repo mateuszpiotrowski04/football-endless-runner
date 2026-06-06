@@ -84,7 +84,7 @@ class FootballPlayer(Entity):
 
         # animacja lotu piłki
         if not self.ball_attached and self.ball_target_pos:
-            self._animate_ball_flight()
+            self.animate_ball_flight()
 
     def _update_camera(self):
         camera.x = lerp(camera.x, self.x, time.dt * 10)
@@ -132,18 +132,6 @@ class FootballPlayer(Entity):
             if not self.is_crouching:
                 self.model3d.loop('Run')
 
-    def _animate_ball_flight(self):
-        self.ball_flight_timer += time.dt / 0.4
-        if self.ball_flight_timer > 1.0:
-            self.ball_flight_timer = 1.0
-
-        curr_x = lerp(self.ball_start_pos[0], self.ball_target_pos[0], self.ball_flight_timer)
-        curr_y = lerp(self.ball_start_pos[1], self.ball_target_pos[1], self.ball_flight_timer)
-        curr_z = lerp(self.ball_start_pos[2], self.ball_target_pos[2], self.ball_flight_timer)
-
-        self.ball.position = (curr_x, curr_y, curr_z)
-        self.ball.rotation_x += 800 * time.dt
-
     def trigger_game_over(self):
         if self.game_over: return
         self.game_over = True
@@ -168,6 +156,8 @@ class FootballPlayer(Entity):
         self.model3d.loop('Run')
 
         self.ball_attached = True
+        self.ball.enabled = True
+        self.ball.parent = scene
         self.ball_target_pos = None
         self.ball_flight_timer = 0.0
 
@@ -176,8 +166,78 @@ class FootballPlayer(Entity):
             self.current_lane = 1
             self.animate_x(LANES[self.current_lane], duration=0.3, curve=curve.in_out_sine)
 
-    def shoot(self, target_pos):
+    def shoot(self, target_pos, shot_outcome):
         self.ball_attached = False
+        self.ball.parent = scene
         self.ball_start_pos = self.ball.world_position
         self.ball_target_pos = target_pos
         self.ball_flight_timer = 0.0
+
+        self.shot_outcome = shot_outcome
+
+        self.post_vel_y = 0.0
+        self.post_vel_z = 0.0
+
+    def animate_ball_flight(self):
+        if self.ball_flight_timer < 1.0:
+            self.ball_flight_timer += time.dt / 0.4
+
+            curr_x = lerp(self.ball_start_pos[0], self.ball_target_pos[0], self.ball_flight_timer)
+            curr_y = lerp(self.ball_start_pos[1], self.ball_target_pos[1], self.ball_flight_timer)
+            curr_z = lerp(self.ball_start_pos[2], self.ball_target_pos[2], self.ball_flight_timer)
+
+            self.ball.position = (curr_x, curr_y, curr_z)
+            self.ball.rotation_x -= 500 * time.dt
+        else:
+            if self.shot_outcome == 'on_target':
+                pass
+
+            elif self.shot_outcome == 'goal':
+                self.ball.z += self.post_vel_z * time.dt
+                goal_net = self.ball_target_pos[2] + 4.0
+
+                if self.ball.z > goal_net:
+                    self.ball.z = goal_net
+                    if self.post_vel_z > 0:
+                        self.ball.rotation_x += self.post_vel_z * 40 * time.dt
+                        self.post_vel_z -= 15.0 * time.dt
+
+                if self.ball.y > 0.21:
+                    self.post_vel_y -= GRAVITY * time.dt
+                    self.ball.y += self.post_vel_y * time.dt
+
+                    if self.ball.z < goal_net:
+                        self.ball.rotation_x += 800 * time.dt
+                else:
+                    self.ball.y = 0.21
+
+            elif self.shot_outcome == 'save':
+                if self.ball.y > 0.21:
+                    self.post_vel_y -= GRAVITY * time.dt
+                    self.ball.y += self.post_vel_y * time.dt
+                    self.ball.z += self.post_vel_z * time.dt
+                    self.ball.rotation_x += 800 * time.dt
+                else:
+                    self.ball.y = 0.21
+                    if self.post_vel_z < 0:
+                        self.ball.z += self.post_vel_z * time.dt
+                        self.ball.rotation_x += self.post_vel_z * 40 * time.dt
+                        self.post_vel_z += 10.0 * time.dt
+
+            elif self.shot_outcome == 'weak':
+                if self.post_vel_z == 0:
+                    self.post_vel_z = 5.0
+
+                if self.post_vel_z > 0:
+                    self.ball.z += self.post_vel_z * time.dt
+                    self.ball.rotation_x += self.post_vel_z * 40 * time.dt
+                    self.post_vel_z -= 5.0 * time.dt
+
+            elif self.shot_outcome == 'miss':
+                self.post_vel_y -= 0.3 * GRAVITY * time.dt
+                self.ball.y += self.post_vel_y * time.dt
+                self.ball.rotation_x -= 500 * time.dt
+                self.ball.z += 30 * time.dt
+
+                if self.ball.z > self.ball_target_pos[2] + 30:
+                    self.ball.enabled = False

@@ -9,7 +9,7 @@ class GameLoop(Entity):
         self.obstacle_manager = obstacle_manager_ref
 
         self.score = 0.0
-        self.WIN_SCORE = 20
+        self.WIN_SCORE = 10
 
         self.preparing_finale = False
         self.is_finale = False
@@ -114,40 +114,47 @@ class GameLoop(Entity):
 
         self.player.model3d.stop()
 
-        target_x = -2 if direction == 'left' else (2 if direction == 'right' else 0)
+        if direction == 'left': target_x = -2
+        elif direction == 'right': target_x = 2
+        else: target_x = 0
 
         if self.power >= 1.0:
             target_y = 5.0
             target_z = self.goal_entity.z + 10
-            is_goal_possible = False
+            base_outcome = 'miss'
 
         elif self.power <= 0.33:
             target_y = 0.2
             target_z = self.goal_entity.z - 15
-            is_goal_possible = False
-
-        elif self.power <= 0.66:
-            target_y = 0.2
-            target_z = self.goal_entity.z + 2
-            is_goal_possible = True
+            base_outcome = 'weak'
 
         else:
-            target_y = 2.0
-            target_z = self.goal_entity.z + 2
-            is_goal_possible = True
+            target_y = 2.0 if self.power > 0.66 else 0.2
+            target_z = self.goal_entity.z - 3.2
+            base_outcome = 'on_target'
 
         self.player.ball_attached = False
 
-        self.player.shoot((target_x, target_y, target_z))
-        invoke(self.verify_shot, target_x, is_goal_possible, delay=0.4)
+        self.player.shoot((target_x, target_y, target_z), base_outcome)
+        invoke(self.verify_shot, target_x, base_outcome, delay=0.4)
 
-    def verify_shot(self, target_x, is_goal_possible):
-        murek_x = self.goal_entity.goalkeeper.x
+    def verify_shot(self, target_x, base_outcome):
+        if base_outcome == 'miss' or base_outcome == 'weak':
+            self.player.model3d.loop('Defeat')
+            invoke(self.show_end_screen, delay=2)
+            return
 
-        if not is_goal_possible or target_x == murek_x:
+        if target_x == self.goal_entity.goalkeeper.x:
+            self.player.shot_outcome = 'save'
+            self.player.post_vel_y = 2.0 if self.player.ball.y > 1.0 else 3.5
+            self.player.post_vel_z = -8.0
+
             self.player.model3d.loop('Defeat')
             invoke(self.show_end_screen, delay=2)
         else:
+            self.player.shot_outcome = 'goal'
+            self.player.post_vel_z = 15.0
+
             self.player.model3d.loop('PickUp')
             invoke(self.trigger_win, delay=2)
 
