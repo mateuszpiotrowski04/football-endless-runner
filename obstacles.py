@@ -1,11 +1,12 @@
 from ursina import Entity, invoke, time, duplicate
 import random
-from settings import LANES, color, WORLD_SPEED
+from settings import LANES, color
 
 
 class ObstacleManager:
     def __init__(self, player_ref):
         self.player = player_ref
+        self.main_loop = None
         self.active_obstacles = []
         self.pool = []
         self.can_spawn = True
@@ -20,7 +21,7 @@ class ObstacleManager:
     def pre_warm_pool(self):
         types = ["wall", "up", "down"]
         for target_type in types:
-            for _ in range(4):
+            for _ in range(8):
                 self.create_new_obstacles(target_type)
 
     def create_new_obstacles(self, target_type):
@@ -44,19 +45,12 @@ class ObstacleManager:
         self.pool.append(obs)
         return obs
 
-    def spawn_obstacle(self):
-        if self.player.game_over: return
-        x_pos = random.choice(LANES)
-        obs_type = random.choice([0, 1, 2])
-
-        if obs_type == 0:
-            target_type = "wall"
-            y_pos = 1
-        elif obs_type == 1:
-            target_type = "up"
+    def spawn_single_obstacle(self, lane_index, target_type):
+        if target_type == "wall":
+            y_pos = 1.0
+        elif target_type == "up":
             y_pos = 0.25
         else:
-            target_type = "down"
             y_pos = 1.25
 
         obs = next((o for o in self.pool if o.type == target_type and not o.enabled), None)
@@ -64,7 +58,7 @@ class ObstacleManager:
         if not obs:
             obs = self.create_new_obstacles(target_type)
 
-        obs.x = x_pos
+        obs.x = LANES[lane_index]
         obs.y = y_pos
         obs.z = 120
         obs.scored = False
@@ -72,17 +66,64 @@ class ObstacleManager:
 
         self.active_obstacles.append(obs)
 
-    def spawn_obstacle_loop(self):
-        if self.player.game_started and not self.player.game_over and self.can_spawn:
-            self.spawn_obstacle()
+    def spawn_formation(self):
+        level = self.main_loop.current_level
+        types = ["wall", "up", "down"]
 
-        invoke(self.spawn_obstacle_loop, delay=0.8)
+        rand_val = random.random()
+
+        # pojedyncze przeszkody
+        if level == 1:
+            self.spawn_single_obstacle(random.randint(0, 2), random.choice(types))
+
+        # pojedyncze lub podwójne ten sam typ
+        elif level == 2:
+            if rand_val < 0.3:
+                empty_lane = random.randint(0, 2)
+                obs_type = random.choice(types)
+                for i in range(3):
+                    if i != empty_lane:
+                        self.spawn_single_obstacle(i, obs_type)
+            else:
+                self.spawn_single_obstacle(random.randint(0, 2), random.choice(types))
+
+        # pojedyncze, podwójne lub mieszane
+        else:
+            if rand_val < 0.4:
+                self.spawn_single_obstacle(random.randint(0, 2), random.choice(types))
+
+            elif rand_val < 0.8:
+                empty_lane = random.randint(0, 2)
+                obs_type = random.choice(types)
+                for i in range(3):
+                    if i != empty_lane:
+                        self.spawn_single_obstacle(i, obs_type)
+            else:
+                empty_lane = random.randint(0, 2)
+                type1 = random.choice(types)
+                type2 = random.choice([t for t in types if t != type1])
+                lanes_to_fill = [i for i in range(3) if i != empty_lane]
+
+                self.spawn_single_obstacle(lanes_to_fill[0], type1)
+                self.spawn_single_obstacle(lanes_to_fill[1], type2)
+
+    def spawn_obstacle_loop(self):
+        if not self.main_loop:
+            invoke(self.spawn_obstacle_loop, delay=0.1)
+            return
+
+        delay = self.main_loop.spawn_rate
+
+        if self.player.game_started and not self.player.game_over and self.can_spawn:
+            self.spawn_formation()
+
+        invoke(self.spawn_obstacle_loop, delay=delay)
 
     def update(self):
         if not self.player.game_started or self.player.game_over: return
 
         for obs in self.active_obstacles[:]:
-            obs.z -= WORLD_SPEED * time.dt
+            obs.z -= self.main_loop.current_speed * time.dt
 
             # kolizja
             if self.player.intersects(obs).hit:

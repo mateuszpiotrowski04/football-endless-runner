@@ -19,11 +19,12 @@ setup_lighting()
 player = FootballPlayer()
 obstacle_manager = ObstacleManager(player)
 main_loop = GameLoop(player, obstacle_manager)
+obstacle_manager.main_loop = main_loop
 
 # boisko
 camera.rotation_x = 5
-pitch = Pitch(player)
-environment = EnvironmentManager(player)
+pitch = Pitch(player, main_loop)
+environment = EnvironmentManager(player, main_loop)
 
 # ui
 ui = UIManager(

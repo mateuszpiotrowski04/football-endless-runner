@@ -1,13 +1,13 @@
 from ursina import Entity, color, time, curve
 import random
-from settings import WORLD_SPEED
 
 GOAL_DISTANCE = 35
 
 class FinaleGoal(Entity):
-    def __init__(self, player_ref, win_callback):
+    def __init__(self, player_ref, main_loop_ref, win_callback):
         super().__init__()
         self.player = player_ref
+        self.main_loop = main_loop_ref
         self.win_callback = win_callback
         self.enabled = False
         self.z = 120
@@ -34,7 +34,7 @@ class FinaleGoal(Entity):
         self.lanes = [-2, 0, 2]
         self.current_lane_index = 1
         self.goalkeeper.x = self.lanes[self.current_lane_index]
-        self.move_timer = 0.5
+        self.move_timer = self.main_loop.gk_interval
 
     def update(self):
         if not self.player.game_started or self.player.game_over: return
@@ -42,7 +42,7 @@ class FinaleGoal(Entity):
         distance = self.z - self.player.z
 
         if distance > GOAL_DISTANCE:
-            self.z -= WORLD_SPEED * time.dt
+            self.z -= self.main_loop.current_speed * time.dt
 
         self.move_timer -= time.dt
         if self.move_timer <= 0:
@@ -51,13 +51,15 @@ class FinaleGoal(Entity):
             self.current_lane_index = max(0, min(2, self.current_lane_index))
 
             target_x = self.lanes[self.current_lane_index]
-            self.goalkeeper.animate_x(target_x, duration=0.25, curve=curve.out_sine)
 
-            self.move_timer = 0.5
+            anim_duration = self.main_loop.gk_interval * 0.5
+            self.goalkeeper.animate_x(target_x, duration=anim_duration, curve=curve.out_sine)
+
+            self.move_timer = self.main_loop.gk_interval
 
     def reset_goal(self):
         self.z = 120
         self.current_lane_index = 1
         self.goalkeeper.x = self.lanes[self.current_lane_index]
-        self.move_timer = 0.5
+        self.move_timer = self.main_loop.gk_interval
         self.enabled = True

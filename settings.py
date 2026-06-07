@@ -11,7 +11,6 @@ LANES = [-2.5, 0, 2.5]
 GRAVITY = 35.0
 JUMP_FORCE = 10.0
 CROUCH_DURATION = 0.85
-WORLD_SPEED = 25.0
 
 # oświetlenie
 def setup_lighting():

@@ -1,12 +1,13 @@
 from ursina import Entity, color, time, scene, destroy, window
-from settings import WORLD_SPEED, LANES
+from settings import LANES
 from goal import GOAL_DISTANCE
 
 
 class EnvironmentManager(Entity):
-    def __init__(self, player_ref):
+    def __init__(self, player_ref, main_loop_ref):
         super().__init__()
         self.player = player_ref
+        self.main_loop = main_loop_ref
         self.finale_goal_ref = None
         self.back_fence = None
         self.needs_post_reset = False
@@ -126,7 +127,7 @@ class EnvironmentManager(Entity):
                 self.finale_goal_ref = None
 
         tile_length = self.FENCE_LENGTH / self.tex_scale_z
-        offset_change = (WORLD_SPEED * time.dt) / tile_length
+        offset_change = (self.main_loop.current_speed * time.dt) / tile_length
 
         for net in self.side_nets:
             nowy_offset_x = (net.texture_offset[0] + offset_change) % 1.0
@@ -136,7 +137,7 @@ class EnvironmentManager(Entity):
             if not p.enabled:
                 continue
 
-            p.z -= WORLD_SPEED * time.dt
+            p.z -= self.main_loop.current_speed * time.dt
 
             if p.z < self.START_Z:
                 if not self.back_fence:

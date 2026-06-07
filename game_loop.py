@@ -1,6 +1,12 @@
 from ursina import Entity, camera, time, Text, color, invoke
-from settings import WORLD_SPEED
 from goal import FinaleGoal, GOAL_DISTANCE
+
+LEVELS_CONFIG = {
+    1: {"speed": 25.0, "spawn_rate": 2.0, "gk_interval": 0.6, "win_score": 15},
+    2: {"speed": 30.0, "spawn_rate": 1.5, "gk_interval": 0.3, "win_score": 50},
+    3: {"speed": 35.0, "spawn_rate": 1.0, "gk_interval": 0.1, "win_score": 100},
+    4: {"speed": 37.0, "spawn_rate": 0.8, "win_score": float('inf')}
+}
 
 class GameLoop(Entity):
     def __init__(self, player_ref, obstacle_manager_ref):
@@ -8,8 +14,14 @@ class GameLoop(Entity):
         self.player = player_ref
         self.obstacle_manager = obstacle_manager_ref
 
+        self.current_level = 1
+        self.current_speed = 25.0
+        self.spawn_rate = 2.0
+        self.win_score = 15
+        self.gk_interval = 0.6
+        self.last_difficulty_bump = 0
+
         self.score = 0.0
-        self.WIN_SCORE = 10
 
         self.preparing_finale = False
         self.is_finale = False
@@ -17,7 +29,7 @@ class GameLoop(Entity):
         self.power = 0.0
         self.shot_fired = False
 
-        self.goal_entity = FinaleGoal(self.player, self.trigger_win)
+        self.goal_entity = FinaleGoal(self.player, self, self.trigger_win)
 
         self.score_display = Text(
             text='0 pkt',
@@ -27,6 +39,15 @@ class GameLoop(Entity):
             color=color.black,
             origin=(0, 0)
         )
+
+        self.load_config()
+
+    def load_config(self):
+        config = LEVELS_CONFIG[self.current_level]
+        self.current_speed = config["speed"]
+        self.spawn_rate = config["spawn_rate"]
+        self.win_score = config["win_score"]
+        self.last_difficulty_bump = 0
 
     def update(self):
         if self._handle_game_over_state(): return
@@ -50,11 +71,18 @@ class GameLoop(Entity):
 
     def _handle_normal_run_logic(self):
         if not self.is_finale or (self.goal_entity.z - self.player.z) > GOAL_DISTANCE:
-            self.score += time.dt * WORLD_SPEED * 0.1
+            self.score += time.dt * self.current_speed * 0.1
             self.score_display.text = f'{int(self.score)} pkt'
             self.check_technical_bonus()
 
-        if self.score >= self.WIN_SCORE and not self.preparing_finale:
+        if self.current_level == 4:
+            current_hundred = int(self.score // 100)
+            if current_hundred > self.last_difficulty_bump and current_hundred > 0:
+                self.current_speed += 2.0
+                self.spawn_rate = max(0.35, self.spawn_rate - 0.1)
+                self.last_difficulty_bump = current_hundred
+
+        if self.score >= self.win_score and not self.preparing_finale:
             self.preparing_finale = True
             self.obstacle_manager.can_spawn = False
 
@@ -158,12 +186,18 @@ class GameLoop(Entity):
             self.player.model3d.loop('PickUp')
             invoke(self.trigger_win, delay=2)
 
-    def start_game(self):
+    def start_game(self, level=None):
+        if level is not None:
+            self.current_level = level
+
+        self.load_config()
         self.player.game_started = True
         self.player.model3d.loop('Run')
 
     def restart_game(self):
         self.player.reset_player()
+
+        self.load_config()
 
         # czyszczenie przeszkód
         for obs in self.obstacle_manager.active_obstacles:
@@ -199,6 +233,10 @@ class GameLoop(Entity):
 
     def trigger_win(self):
         self.player.game_started = False
+
+        if self.current_level < 4:
+            self.current_level += 1
+
         self.player.ui_ref.show_win_screen(self.score)
         self.score_display.enabled = False
 
