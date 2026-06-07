@@ -66,7 +66,7 @@ class ObstacleManager:
 
         obs.x = x_pos
         obs.y = y_pos
-        obs.z = 50
+        obs.z = 120
         obs.scored = False
         obs.enabled = True
 

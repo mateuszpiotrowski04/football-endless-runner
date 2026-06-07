@@ -10,7 +10,7 @@ class FinaleGoal(Entity):
         self.player = player_ref
         self.win_callback = win_callback
         self.enabled = False
-        self.z = 60
+        self.z = 120
 
         # bramka
         self.goal = Entity(
@@ -56,7 +56,7 @@ class FinaleGoal(Entity):
             self.move_timer = 0.5
 
     def reset_goal(self):
-        self.z = 60
+        self.z = 120
         self.current_lane_index = 1
         self.goalkeeper.x = self.lanes[self.current_lane_index]
         self.move_timer = 0.5
