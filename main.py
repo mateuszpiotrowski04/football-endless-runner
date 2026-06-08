@@ -21,17 +21,24 @@ obstacle_manager = ObstacleManager(player)
 main_loop = GameLoop(player, obstacle_manager)
 obstacle_manager.main_loop = main_loop
 
-# boisko
+# kamera
 camera.rotation_x = 5
+camera.y = 0.5
+camera.z = -7
+
+# boisko
 pitch = Pitch(player, main_loop)
 environment = EnvironmentManager(player, main_loop)
 
 # ui
 ui = UIManager(
     start_callback=main_loop.start_game,
-    restart_callback=main_loop.restart_game,
-    menu_callback=main_loop.reset_to_menu
+    restart_callback=main_loop.start_game,
+    menu_callback=main_loop.reset_to_menu,
+    next_callback=main_loop.start_next_level
 )
 player.ui_ref = ui
+
+main_loop.reset_to_menu()
 
 app.run()

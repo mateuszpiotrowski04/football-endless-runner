@@ -34,10 +34,10 @@ class GameLoop(Entity):
         self.score_display = Text(
             text='0 pkt',
             parent=camera.ui,
-            position=(-0.55, 0.45),
-            scale=1.7,
+            position=(-0.8, 0.45),
+            scale=2,
             color=color.black,
-            origin=(0, 0)
+            origin=(-0.5, 0.5)
         )
 
         self.load_config()
@@ -191,15 +191,8 @@ class GameLoop(Entity):
             self.current_level = level
 
         self.load_config()
-        self.player.game_started = True
-        self.player.model3d.loop('Run')
-
-    def restart_game(self):
         self.player.reset_player()
 
-        self.load_config()
-
-        # czyszczenie przeszkód
         for obs in self.obstacle_manager.active_obstacles:
             obs.enabled = False
         self.obstacle_manager.active_obstacles.clear()
@@ -207,14 +200,9 @@ class GameLoop(Entity):
         self.obstacle_manager.enabled = True
         self.obstacle_manager.can_spawn = True
 
-        # reset punktów
         self.score = 0
         self.score_display.text = '0 pkt'
         self.score_display.enabled = True
-
-        # przejecie kontroli
-        self.player.ui_ref.end_menu.enabled = False
-        self.player.ui_ref.bg_panel.enabled = False
 
         self.is_finale = False
         self.preparing_finale = False
@@ -223,21 +211,38 @@ class GameLoop(Entity):
         self.goal_entity.reset_goal()
         self.goal_entity.enabled = False
 
+        self.player.game_started = True
+        self.player.model3d.loop('Run')
+
+    def start_next_level(self):
+        next_lvl = self.current_level + 1 if self.current_level < 4 else 4
+        self.start_game(level=next_lvl)
+
     def reset_to_menu(self):
-        self.restart_game()
-
+        self.player.reset_player()
         self.player.game_started = False
-        self.player.model3d.stop()
+        self.player.game_over = False
+        self.player.model3d.loop('Idle')
 
-        self.player.ui_ref.show_start_menu()
+        for obs in self.obstacle_manager.active_obstacles:
+            obs.enabled = False
+        self.obstacle_manager.active_obstacles.clear()
+
+        self.goal_entity.reset_goal()
+        self.goal_entity.enabled = False
+        self.score_display.enabled = False
+
+        self.player.ui_ref.show_main_menu()
 
     def trigger_win(self):
         self.player.game_started = False
 
         if self.current_level < 4:
-            self.current_level += 1
+            if self.player.ui_ref.max_unlocked_level == self.current_level:
+                self.player.ui_ref.max_unlocked_level += 1
+                self.player.ui_ref.refresh_unlocks()
 
-        self.player.ui_ref.show_win_screen(self.score)
+        self.player.ui_ref.show_win_screen(self.score, self.current_level)
         self.score_display.enabled = False
 
     def show_end_screen(self):

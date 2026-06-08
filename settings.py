@@ -4,7 +4,7 @@ import simplepbr
 
 # ustawienia okna
 WINDOW_TITLE = "Football Runner"
-WINDOW_SIZE = (1024, 768)
+WINDOW_SIZE = (1600, 900)
 
 # fizyka
 LANES = [-2.5, 0, 2.5]
