@@ -5,6 +5,17 @@ Piłkarska gra zręcznościowa 3D, polegająca na biegu zawodnikiem po boisku, p
 - język: Python 3.14.0
 - biblioteki: Ursina
 
+### Instalacja:
+1. Pobierz projekt na swój komputer 
+2. Zainstaluj wymagane biblioteki:
+```bash
+  pip install -r requirements.txt
+```
+3. Uruchom grę:
+```bash
+  python main.py
+```
+
 ### Sterowanie:
 - **ruch:**
   - strzałka w lewo/prawo - ruch w lewo/prawo 
